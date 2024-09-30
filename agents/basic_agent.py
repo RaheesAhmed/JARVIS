@@ -6,57 +6,17 @@ from langchain.schema import HumanMessage, AIMessage, SystemMessage
 from typing import List
 import os
 import dotenv
-import subprocess
-import webbrowser
+from tools.system_tools import (
+    open_application,
+    close_application,
+    open_file,
+    create_folder,
+    open_browser,
+    search_on_browser,
+    search_on_internet,
+)
 
 dotenv.load_dotenv()
-
-
-# Define custom tools
-def open_application(app_name: str) -> str:
-    try:
-        subprocess.Popen(app_name)
-        return f"Opened {app_name}"
-    except Exception as e:
-        return f"Failed to open {app_name}: {str(e)}"
-
-
-def close_application(app_name: str) -> str:
-    try:
-        os.system(f"taskkill /F /IM {app_name}.exe")
-        return f"Closed {app_name}"
-    except Exception as e:
-        return f"Failed to close {app_name}: {str(e)}"
-
-
-def open_file(file_path: str) -> str:
-    try:
-        os.startfile(file_path)
-        return f"Opened file: {file_path}"
-    except Exception as e:
-        return f"Failed to open file {file_path}: {str(e)}"
-
-
-def create_folder(folder_path: str) -> str:
-    try:
-        os.makedirs(folder_path, exist_ok=True)
-        return f"Created folder: {folder_path}"
-    except Exception as e:
-        return f"Failed to create folder {folder_path}: {str(e)}"
-
-
-def open_browser(url: str) -> str:
-    try:
-        webbrowser.open(url)
-        return f"Opened browser with URL: {url}"
-    except Exception as e:
-        return f"Failed to open browser with URL {url}: {str(e)}"
-
-
-def search_on_browser(query: str) -> str:
-    search_url = f"https://www.google.com/search?q={query.replace(' ', '+')}"
-    return open_browser(search_url)
-
 
 # Create LangChain tools
 tools = [
@@ -89,6 +49,11 @@ tools = [
         name="SearchOnBrowser",
         func=search_on_browser,
         description="Useful for searching on the web browser. Input should be the search query.",
+    ),
+    Tool(
+        name="SearchOnInternet",
+        func=search_on_internet,
+        description="Useful for searching on the internet. Input should be the search query.",
     ),
 ]
 
@@ -127,7 +92,7 @@ agent_executor = AgentExecutor.from_agent_and_tools(
 )
 
 
-def process_command(command: str) -> str:
+async def process_command(command: str) -> str:
     agent_executor = AgentExecutor.from_agent_and_tools(
         agent=agent,
         tools=tools,
@@ -162,22 +127,7 @@ def process_command(command: str) -> str:
         return "I'm sorry, I encountered an error while processing your request. Could you please try rephrasing your command?"
 
 
-def is_task_request(user_input: str) -> bool:
-    task_keywords = [
-        "open",
-        "close",
-        "search",
-        "find",
-        "create",
-        "run",
-        "execute",
-        "start",
-        "stop",
-    ]
-    return any(keyword in user_input.lower() for keyword in task_keywords)
-
-
-def chat_with_user(user_input: str, chat_history: List[dict]) -> str:
+async def chat_with_user(user_input: str, chat_history: List[dict]) -> str:
     chat_messages = [
         SystemMessage(
             content="You are Jarvis, a friendly and helpful AI assistant. Engage in casual conversation and provide information when asked. If the user requests a specific task, politely inform them you'll use your tools to help."
@@ -196,6 +146,35 @@ def chat_with_user(user_input: str, chat_history: List[dict]) -> str:
 
     response = llm(chat_messages)
     return response.content
+
+
+def is_task_request(user_input: str) -> bool:
+    task_keywords = [
+        "open",
+        "close",
+        "search",
+        "find",
+        "create",
+        "run",
+        "execute",
+        "start",
+        "stop",
+    ]
+    return any(keyword in user_input.lower() for keyword in task_keywords)
+
+
+class BasicAgent:
+    def __init__(self):
+        # Initialize any necessary attributes here
+        pass
+
+    async def process_input(self, user_input: str, chat_history: List[dict]) -> str:
+        if is_task_request(user_input):
+            print("Jarvis: Certainly! I'll use my tools to help you with that task.")
+            response = await process_command(user_input)
+        else:
+            response = await chat_with_user(user_input, chat_history)
+        return response
 
 
 if __name__ == "__main__":

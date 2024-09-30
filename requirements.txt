@@ -8,3 +8,7 @@ openai-whisper
 numpy
 sounddevice
 pygame
+asyncio
+websockets
+redis
+tavily-python

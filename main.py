@@ -1,41 +1,54 @@
-from voice.tts import TTSEngine
-from voice.stt import STTEngine
-from agents.basic_agent import chat_with_user, process_command, is_task_request
+import asyncio
+from agents.basic_agent import BasicAgent
+from tools.system_tools import SystemTools
+from tools.custom_tools import CustomTools
+from voice.tts import text_to_speech
+from voice.stt import speech_to_text
 
 
-def main():
-    tts = TTSEngine()
-    stt = STTEngine()
+async def main():
+    agent = BasicAgent()
+    system_tools = SystemTools()
+    custom_tools = CustomTools()
     chat_history = []
 
-    tts.sync_speak(
-        "Hello, I am Jarvis, your personal assistant. How can I help you today?"
+    print(
+        "Jarvis: Hello! I'm Jarvis, your personal assistant. How can I help you today?"
+    )
+    await text_to_speech(
+        "Hello! I'm Jarvis, your personal assistant. How can I help you today?"
     )
 
     while True:
-        user_input = stt.listen()
-        if user_input:
-            if user_input.lower() in ["exit", "quit", "goodbye"]:
-                tts.sync_speak("Goodbye! Have a great day!")
-                break
+        print("You: ", end="", flush=True)
+        user_input = await speech_to_text()
+        print(user_input)
 
-            if is_task_request(user_input):
-                tts.sync_speak(
-                    "Certainly! I'll use my tools to help you with that task."
-                )
-                response = process_command(user_input)
-            else:
-                response = chat_with_user(user_input, chat_history)
+        if user_input.lower() in ["exit", "quit", "goodbye"]:
+            final_message = "Goodbye! Have a great day!"
+            print(f"Jarvis: {final_message}")
+            await text_to_speech(final_message)
+            break
 
-            tts.sync_speak(response)
+        # Asynchronous processing of tasks
+        tasks = [
+            agent.process_input(user_input, chat_history),
+            system_tools.async_task(),
+            custom_tools.async_task(),
+        ]
+        results = await asyncio.gather(*tasks)
 
-            # Update chat history
-            chat_history.append({"role": "user", "content": user_input})
-            chat_history.append({"role": "assistant", "content": response})
+        response = results[0]  # The response from process_input
+        print(f"Jarvis: {response}")
+        await text_to_speech(response)
 
-            # Limit chat history to last 10 messages
-            chat_history = chat_history[-10:]
+        # Update chat history
+        chat_history.append({"role": "user", "content": user_input})
+        chat_history.append({"role": "assistant", "content": response})
+
+        # Limit chat history to last 10 messages to prevent token limit issues
+        chat_history = chat_history[-10:]
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
