@@ -132,11 +132,30 @@ def process_command(command: str) -> str:
         tools=tools,
         verbose=True,
         handle_parsing_errors=True,
+        max_iterations=3,  # Limit the number of iterations
     )
 
     try:
+        # Add a friendly acknowledgment
+        print(f"Certainly! I'll help you with: {command}")
+
         result = agent_executor.invoke({"input": command})
-        return result["output"]
+
+        # Extract the final answer and the intermediate steps
+        final_answer = result.get("output", "")
+        intermediate_steps = result.get("intermediate_steps", [])
+
+        # Process intermediate steps to create a friendly response
+        friendly_response = "Here's what I did:\n"
+        for step in intermediate_steps:
+            action = step[0]
+            friendly_response += f"- I'm going to {action.tool}: {action.tool_input}\n"
+            friendly_response += f"  {step[1]}\n"
+
+        # Combine the friendly response with the final answer
+        complete_response = f"{friendly_response}\n{final_answer}"
+
+        return complete_response
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         return "I'm sorry, I encountered an error while processing your request. Could you please try rephrasing your command?"
