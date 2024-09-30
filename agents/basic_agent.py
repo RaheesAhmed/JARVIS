@@ -2,6 +2,7 @@ from langchain.agents import Tool, AgentExecutor
 from langchain.agents import create_react_agent
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
+from langchain.schema import HumanMessage, AIMessage, SystemMessage
 from typing import List
 import os
 import dotenv
@@ -161,6 +162,66 @@ def process_command(command: str) -> str:
         return "I'm sorry, I encountered an error while processing your request. Could you please try rephrasing your command?"
 
 
+def is_task_request(user_input: str) -> bool:
+    task_keywords = [
+        "open",
+        "close",
+        "search",
+        "find",
+        "create",
+        "run",
+        "execute",
+        "start",
+        "stop",
+    ]
+    return any(keyword in user_input.lower() for keyword in task_keywords)
+
+
+def chat_with_user(user_input: str, chat_history: List[dict]) -> str:
+    chat_messages = [
+        SystemMessage(
+            content="You are Jarvis, a friendly and helpful AI assistant. Engage in casual conversation and provide information when asked. If the user requests a specific task, politely inform them you'll use your tools to help."
+        ),
+    ]
+
+    # Add chat history
+    for message in chat_history:
+        if message["role"] == "user":
+            chat_messages.append(HumanMessage(content=message["content"]))
+        else:
+            chat_messages.append(AIMessage(content=message["content"]))
+
+    # Add the current user input
+    chat_messages.append(HumanMessage(content=user_input))
+
+    response = llm(chat_messages)
+    return response.content
+
+
 if __name__ == "__main__":
-    result = process_command("Open the Chrome browser and search for 'OpenAI'")
-    print(result)
+    chat_history = []
+    print(
+        "Jarvis: Hello! I'm Jarvis, your personal assistant. How can I help you today?"
+    )
+
+    while True:
+        user_input = input("You: ")
+
+        if user_input.lower() in ["exit", "quit", "goodbye"]:
+            print("Jarvis: Goodbye! Have a great day!")
+            break
+
+        if is_task_request(user_input):
+            print("Jarvis: Certainly! I'll use my tools to help you with that task.")
+            response = process_command(user_input)
+        else:
+            response = chat_with_user(user_input, chat_history)
+
+        print(f"Jarvis: {response}")
+
+        # Update chat history
+        chat_history.append({"role": "user", "content": user_input})
+        chat_history.append({"role": "assistant", "content": response})
+
+        # Limit chat history to last 10 messages to prevent token limit issues
+        chat_history = chat_history[-10:]
