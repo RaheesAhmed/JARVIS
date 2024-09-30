@@ -35,6 +35,11 @@ class TTSEngine:
         asyncio.run(self.speak(text))
 
 
+async def text_to_speech(text):
+    # Your existing code here
+    pass
+
+
 if __name__ == "__main__":
     tts = TTSEngine()
     tts.sync_speak(

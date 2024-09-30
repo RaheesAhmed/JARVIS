@@ -164,10 +164,6 @@ def is_task_request(user_input: str) -> bool:
 
 
 class BasicAgent:
-    def __init__(self):
-        # Initialize any necessary attributes here
-        pass
-
     async def process_input(self, user_input: str, chat_history: List[dict]) -> str:
         if is_task_request(user_input):
             print("Jarvis: Certainly! I'll use my tools to help you with that task.")

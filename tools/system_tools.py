@@ -3,6 +3,23 @@ import subprocess
 import webbrowser
 from tavily import TavilyClient
 import shutil
+import asyncio
+
+# ... (keep all existing functions)
+
+
+class SystemTools:
+    def __init__(self):
+        # Initialize any necessary attributes here
+        pass
+
+    async def async_task(self):
+        # This is a placeholder async method
+        await asyncio.sleep(0)
+        return "SystemTools async task completed"
+
+
+# ... (keep all existing functions)
 
 
 def open_application(app_name: str) -> str:

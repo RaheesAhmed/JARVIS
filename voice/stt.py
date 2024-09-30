@@ -24,6 +24,11 @@ class STTEngine:
         return result["text"]
 
 
+async def speech_to_text():
+    stt_engine = STTEngine()
+    return stt_engine.listen()
+
+
 if __name__ == "__main__":
     stt_engine = STTEngine()
     text = stt_engine.listen()
